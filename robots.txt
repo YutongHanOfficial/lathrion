@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://yutonghanofficial.github.io/lathrion/sitemap.xml
+Sitemap: https://lathrion.com/sitemap.xml

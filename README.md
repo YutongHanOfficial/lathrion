@@ -2,7 +2,7 @@
 
 The website of **Lathrion**, a holding company that builds and runs software that finds things out.
 
-**Live:** https://yutonghanofficial.github.io/lathrion/
+**Live:** https://lathrion.com
 
 It is a static site with no build step and no dependencies: plain HTML, CSS and a small script, served by
 GitHub Pages from the root of `main`.
@@ -45,18 +45,21 @@ node tools/brand.mjs --png
 That rewrites the SVGs in `assets/brand/`, `favicon.svg`, the inline copies in the pages, and, with
 `--png`, renders `favicon.ico`, the PNG icons and `og.png` using Google Chrome.
 
-## Moving to lathrion.com
+## Domain
 
-1. At Namecheap, under Domain List → lathrion.com → Advanced DNS, remove the parking records and add:
-   - four `A` records for host `@`: `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`
-   - one `CNAME` record for host `www`: `yutonghanofficial.github.io.`
-2. Add a file named `CNAME` containing `lathrion.com`, or set the custom domain in the repo's
-   Settings → Pages.
-3. Once the certificate is issued, turn on **Enforce HTTPS** in Settings → Pages.
-4. Replace `https://yutonghanofficial.github.io/lathrion/` with `https://lathrion.com/` in `index.html`,
-   `privacy.html`, `robots.txt` and `sitemap.xml`.
+The site is served at **lathrion.com** through the `CNAME` file. The DNS lives at Namecheap
+(Domain List → lathrion.com → Advanced DNS):
 
-`404.html` works at either address, because it picks its base path from the hostname.
+| Type | Host | Value |
+| --- | --- | --- |
+| A | `@` | `185.199.108.153` |
+| A | `@` | `185.199.109.153` |
+| A | `@` | `185.199.110.153` |
+| A | `@` | `185.199.111.153` |
+| CNAME | `www` | `yutonghanofficial.github.io.` |
+
+www.lathrion.com and the old github.io address both redirect to https://lathrion.com, and HTTPS is
+enforced in Settings → Pages. `404.html` picks its base path from the hostname, so it works at either address.
 
 ## Privacy
 
