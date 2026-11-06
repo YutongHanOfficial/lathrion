@@ -48,9 +48,83 @@
     window.matchMedia('(min-width: 900px)').addEventListener('change', (e) => { if (e.matches) setMenu(false); });
   }
 
-  const links = [...document.querySelectorAll('.nav__links a[href^="#"]')];
+  // ---------------------------------------------------------------- plain addresses for sections
+  // Sections live at /holdings, /doctrine, /name and /contact (no #). GitHub Pages serves each of those
+  // from a copy of index.html (tools/routes.mjs), and this script scrolls to the matching section.
+
+  const SECTIONS = { holdings: 'Holdings', doctrine: 'Doctrine', name: 'The name', contact: 'Contact' };
+  const home = location.pathname.replace(/[^/]*$/, ''); // the folder the site lives in, usually "/"
+  const sectionOf = (path) => {
+    if (path.slice(0, home.length) !== home) return null;
+    const rest = path.slice(home.length).replace(/\.html$/, '').replace(/\/+$/, '');
+    return Object.prototype.hasOwnProperty.call(SECTIONS, rest) ? rest : null;
+  };
+  const isHome = (path) => path === home || path === `${home}index.html`;
+  const onePage = Boolean(document.getElementById('holdings'));
+
+  // Smooth unless the visitor prefers reduced motion; an instant jump has to switch off the CSS smooth scroll.
+  const scrollToTarget = (target, smooth) => {
+    if (smooth && !reduceMotion.matches) {
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      else window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    const before = root.style.scrollBehavior;
+    root.style.scrollBehavior = 'auto';
+    if (target) target.scrollIntoView({ block: 'start' });
+    else window.scrollTo(0, 0);
+    root.style.scrollBehavior = before;
+  };
+  const show = (id, smooth = true) => {
+    scrollToTarget(id ? document.getElementById(id) : null, smooth);
+    document.title = id ? `${SECTIONS[id]} · Lathrion` : 'Lathrion';
+  };
+
+  if (onePage) {
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    // Old links such as /#name become /name.
+    const legacy = location.hash.slice(1);
+    if (Object.prototype.hasOwnProperty.call(SECTIONS, legacy)) history.replaceState(null, '', home + legacy);
+    const initial = sectionOf(location.pathname);
+    if (initial) {
+      show(initial, false);
+      // Web fonts can shift the layout after the first jump; settle again if the visitor hasn't scrolled since.
+      const landed = window.scrollY;
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(() => { if (Math.abs(window.scrollY - landed) < 2) show(initial, false); });
+      }
+    }
+    window.addEventListener('popstate', () => show(sectionOf(location.pathname), true));
+  }
+
+  document.addEventListener('click', (e) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const a = e.target.closest('a[href]');
+    if (!a || (a.target && a.target !== '_self')) return;
+    const raw = a.getAttribute('href');
+    if (raw.charAt(0) === '#') { // in-page targets such as the skip link: move there without touching the address
+      const target = document.getElementById(raw.slice(1));
+      if (!target) return;
+      e.preventDefault();
+      if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+      target.focus({ preventScroll: true });
+      scrollToTarget(target, true);
+      return;
+    }
+    if (!onePage) return;
+    const url = new URL(a.href, location.href);
+    if (url.origin !== location.origin) return;
+    const id = sectionOf(url.pathname);
+    if (!id && !isHome(url.pathname)) return;
+    e.preventDefault();
+    const path = id ? home + id : home;
+    if (path !== location.pathname) history.pushState(null, '', path + url.search);
+    show(id, true);
+  });
+
+  const links = [...document.querySelectorAll('.nav__links a')];
   if (links.length && hasIO) {
-    const byId = new Map(links.map((a) => [a.getAttribute('href').slice(1), a]));
+    const byId = new Map(links.map((a) => [sectionOf(new URL(a.href, location.href).pathname), a]).filter(([id]) => id));
     const seen = new Set();
     const io = new IntersectionObserver((entries) => {
       entries.forEach((e) => { if (e.isIntersecting) seen.add(e.target.id); else seen.delete(e.target.id); });
@@ -192,7 +266,7 @@
       canvas.width = Math.round(W * dpr);
       canvas.height = Math.round(H * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      unit = Math.min(W, H) * 0.285;
+      unit = Math.min(W, H) * (W < 520 ? 0.255 : 0.285); // a little smaller on phones, clear of the corner labels
       cx = W / 2;
       cy = H * 0.57;
     };
@@ -385,7 +459,7 @@
     const readout = (az, lift) => {
       const deg = ((((az * 180) / Math.PI) % 360) + 360) % 360;
       if (outAz) outAz.textContent = `Az ${deg.toFixed(1).padStart(5, '0')}°`;
-      if (outLift) outLift.textContent = `Lift +${lift.toFixed(3)}`;
+      if (outLift) outLift.textContent = `${W < 520 ? 'Sep.' : 'Separation'} +${lift.toFixed(3)}`;
     };
 
     const scrollLift = () => {

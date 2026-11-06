@@ -1,7 +1,7 @@
 {
   "name": "Lathrion",
   "short_name": "Lathrion",
-  "description": "A holding company for software that finds things out.",
+  "description": "A technology holding company.",
   "start_url": "./",
   "display": "browser",
   "background_color": "#08090b",

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Lathrion brand assets, drawn as plain geometry so every size comes from one source.
 //
-//   node tools/brand.mjs          writes assets/brand/*.svg and favicon.svg, and refreshes the
-//                                 inline copies in the HTML pages (between <!--brand:NAME--> markers)
+//   node tools/brand.mjs          writes assets/brand/*.svg and favicon.svg, refreshes the inline copies
+//                                 in the HTML pages (between <!--brand:NAME--> markers) and the section pages
 //   node tools/brand.mjs --png    also renders the PNG icons, favicon.ico and og.png with headless Chrome
 //
 // The mark is a pyramid whose capstone has been lifted off. The wordmark is drawn letter by letter;
@@ -13,6 +13,7 @@ import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { writeRoutes } from './routes.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const BONE = '#ece8e1';
@@ -313,4 +314,5 @@ for (const [file, svg] of Object.entries(out)) writeFileSync(join(ROOT, file), s
 console.log(`  wrote ${Object.keys(out).length} SVG files (wordmark ${f(WM.width)} x ${f(WM.height)} units)`);
 
 for (const page of ['index.html', 'privacy.html', '404.html', 'tools/og.html']) inject(page);
+writeRoutes(); // the section pages are copies of index.html
 if (process.argv.includes('--png')) renderPngs();

@@ -1,6 +1,6 @@
 # Lathrion
 
-The website of **Lathrion**, a holding company that builds and runs software that finds things out.
+The website of **Lathrion**, a technology holding company.
 
 **Live:** https://lathrion.com
 
@@ -12,28 +12,39 @@ GitHub Pages from the root of `main`.
 | Path | What it is |
 | --- | --- |
 | `index.html` | The homepage: hero, holdings, doctrine, the name, contact |
+| `holdings.html`, `doctrine.html`, `name.html`, `contact.html` | Copies of `index.html` that make lathrion.com/holdings and the other section addresses work. Generated; don't edit them |
 | `privacy.html` | Privacy policy (the site collects nothing) |
 | `404.html` | Not-found page. GitHub Pages serves it for any missing address |
 | `assets/css/site.css` | All styles. Colours and type are tokens at the top |
-| `assets/js/site.js` | Clock, menu, scroll reveals, doctrine focus and the rotating pyramid in the hero |
+| `assets/js/site.js` | Section addresses, clock, menu, scroll reveals, doctrine focus and the rotating pyramid in the hero |
 | `assets/fonts/` | Self-hosted fonts and their licences |
 | `assets/brand/` | Logo files: mark, wordmark and lockup, light and dark |
 | `tools/brand.mjs` | Draws the logo and writes every icon from it |
+| `tools/routes.mjs` | Writes the section copies of `index.html` |
+| `tools/serve.py` | Local server that behaves like GitHub Pages |
 | `tools/og.html` | The 1200 x 630 social card, rendered into `og.png` |
 
 ## Run it locally
 
 ```bash
-python3 -m http.server 8000
+python3 tools/serve.py
 ```
 
-Then open http://localhost:8000.
+Then open http://localhost:8000. The script answers like GitHub Pages does: `/name` serves `name.html`,
+and unknown addresses get `404.html`.
 
 ## Changing things
 
 **Add a product.** Copy one `<li>` in the holdings section of `index.html` into the right sector and change
-the name, link, description and the tag under "Live". Then update the counts: "Seven products are public"
-in the hero and the `07` in the strip below it.
+the name, link, description and the tag under "Live". Then update the counts: "Seven are public" in the
+hero, the `07` in the strip below it and "Seven public products" in the phone menu.
+
+**After any change to `index.html`,** regenerate the section pages, or /holdings, /doctrine, /name and
+/contact will serve the old version:
+
+```bash
+node tools/routes.mjs
+```
 
 **Change the logo.** The mark and the wordmark are drawn from numbers in `tools/brand.mjs` (stroke weights,
 letter widths, spacing). After editing, run:
