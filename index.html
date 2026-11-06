@@ -59,14 +59,23 @@
       <span class="nav__toggle-label">Menu</span><span class="nav__toggle-icon" aria-hidden="true"><i></i><i></i></span>
     </button>
   </div>
-  <nav class="menu" id="menu" aria-label="Menu" hidden>
-    <a href="#holdings"><span>Holdings</span><span class="mono">01</span></a>
-    <a href="#doctrine"><span>Doctrine</span><span class="mono">02</span></a>
-    <a href="#name"><span>The name</span><span class="mono">03</span></a>
-    <a href="#contact"><span>Contact</span><span class="mono">04</span></a>
-    <p class="menu__status mono"><i class="dot"></i>Operating <span data-clock>UTC 00:00:00</span></p>
-  </nav>
 </header>
+
+<nav class="menu" id="menu" aria-label="Menu" hidden>
+  <div class="menu__inner wrap">
+    <p class="menu__label mono">Index</p>
+    <ol class="menu__links">
+      <li style="--i:0"><a href="#holdings"><span class="menu__num mono">01</span><span class="menu__title">Holdings</span><span class="menu__hint">Ballot Desk, Six Degrees and five more</span><span class="menu__go" aria-hidden="true">↓</span></a></li>
+      <li style="--i:1"><a href="#doctrine"><span class="menu__num mono">02</span><span class="menu__title">Doctrine</span><span class="menu__hint">Six rules we work by</span><span class="menu__go" aria-hidden="true">↓</span></a></li>
+      <li style="--i:2"><a href="#name"><span class="menu__num mono">03</span><span class="menu__title">The name</span><span class="menu__hint">What <span lang="grc">λάθρα</span> means</span><span class="menu__go" aria-hidden="true">↓</span></a></li>
+      <li style="--i:3"><a href="#contact"><span class="menu__num mono">04</span><span class="menu__title">Contact</span><span class="menu__hint">Partnerships, press, anything else</span><span class="menu__go" aria-hidden="true">↓</span></a></li>
+    </ol>
+    <div class="menu__foot mono">
+      <p class="menu__status"><i class="dot"></i>Operating <span data-clock>UTC 00:00:00</span></p>
+      <p class="menu__more"><a href="privacy.html">Privacy</a><a href="https://github.com/YutongHanOfficial" target="_blank" rel="noopener">GitHub ↗</a></p>
+    </div>
+  </div>
+</nav>
 
 <main id="main">
 

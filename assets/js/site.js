@@ -36,6 +36,7 @@
     toggle.setAttribute('aria-expanded', String(open));
     toggle.querySelector('.nav__toggle-label').textContent = open ? 'Close' : 'Menu';
     menu.hidden = !open;
+    if (open) menu.scrollTop = 0;
     root.classList.toggle('menu-open', open);
   };
   if (toggle && menu) {
