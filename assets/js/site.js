@@ -1,4 +1,4 @@
-// Lathrion: clock, menu, scroll reveals, label scramble, doctrine focus and the hero object.
+// Lathrion: section addresses, menu, scroll reveals and the hero object.
 // No dependencies. Everything here is an enhancement: the page reads fine without it.
 (() => {
   'use strict';
@@ -7,22 +7,9 @@
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const hasIO = 'IntersectionObserver' in window;
 
-  // ---------------------------------------------------------------- UTC clock and year
-
-  const clocks = document.querySelectorAll('[data-clock]');
-  const pad = (n) => String(n).padStart(2, '0');
-  const tick = () => {
-    const d = new Date();
-    const s = `UTC ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
-    clocks.forEach((el) => { el.textContent = s; });
-  };
-  if (clocks.length) {
-    tick();
-    setTimeout(() => { tick(); setInterval(tick, 1000); }, 1000 - (Date.now() % 1000));
-  }
   document.querySelectorAll('[data-year]').forEach((el) => { el.textContent = String(new Date().getFullYear()); });
 
-  // ---------------------------------------------------------------- nav: scrolled state, menu, current section
+  // ---------------------------------------------------------------- nav: scrolled state and phone menu
 
   const nav = document.querySelector('[data-nav]');
   const onScroll = () => nav && nav.classList.toggle('is-scrolled', window.scrollY > 8);
@@ -49,18 +36,20 @@
   }
 
   // ---------------------------------------------------------------- plain addresses for sections
-  // Sections live at /holdings, /doctrine, /name and /contact (no #). GitHub Pages serves each of those
+  // Sections live at /portfolio, /principles, /about and /contact (no #). GitHub Pages serves each of those
   // from a copy of index.html (tools/routes.mjs), and this script scrolls to the matching section.
 
-  const SECTIONS = { holdings: 'Holdings', doctrine: 'Doctrine', name: 'The name', contact: 'Contact' };
+  const SECTIONS = { portfolio: 'Portfolio', principles: 'Principles', about: 'About', contact: 'Contact' };
+  const OLD_NAMES = { holdings: 'portfolio', doctrine: 'principles', name: 'about' }; // earlier section names
+  const has = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
   const home = location.pathname.replace(/[^/]*$/, ''); // the folder the site lives in, usually "/"
   const sectionOf = (path) => {
     if (path.slice(0, home.length) !== home) return null;
     const rest = path.slice(home.length).replace(/\.html$/, '').replace(/\/+$/, '');
-    return Object.prototype.hasOwnProperty.call(SECTIONS, rest) ? rest : null;
+    return has(SECTIONS, rest) ? rest : null;
   };
   const isHome = (path) => path === home || path === `${home}index.html`;
-  const onePage = Boolean(document.getElementById('holdings'));
+  const onePage = Boolean(document.getElementById('portfolio'));
 
   // Smooth unless the visitor prefers reduced motion; an instant jump has to switch off the CSS smooth scroll.
   const scrollToTarget = (target, smooth) => {
@@ -82,9 +71,10 @@
 
   if (onePage) {
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-    // Old links such as /#name become /name.
-    const legacy = location.hash.slice(1);
-    if (Object.prototype.hasOwnProperty.call(SECTIONS, legacy)) history.replaceState(null, '', home + legacy);
+    // Old links such as /#portfolio or /#holdings become /portfolio.
+    const hash = location.hash.slice(1);
+    const fromHash = has(SECTIONS, hash) ? hash : has(OLD_NAMES, hash) ? OLD_NAMES[hash] : null;
+    if (fromHash) history.replaceState(null, '', home + fromHash);
     const initial = sectionOf(location.pathname);
     if (initial) {
       show(initial, false);
@@ -134,77 +124,20 @@
     byId.forEach((_, id) => { const s = document.getElementById(id); if (s) io.observe(s); });
   }
 
-  // ---------------------------------------------------------------- reveals and label scramble
+  // ---------------------------------------------------------------- scroll reveals
 
-  const GLYPHS = 'ΛΔΞΣΦΨΩ/\\<>#=+01';
-  const prepScramble = (el) => {
-    const text = el.textContent;
-    const sr = document.createElement('span');
-    sr.className = 'sr-only';
-    sr.textContent = text;
-    const shown = document.createElement('span');
-    shown.setAttribute('aria-hidden', 'true');
-    shown.textContent = text;
-    el.replaceChildren(sr, shown);
-    return { text, shown };
-  };
-  const scramble = ({ text, shown }) => {
-    const start = performance.now();
-    const dur = 320 + text.length * 34;
-    const frame = (now) => {
-      const p = Math.min(1, (now - start) / dur);
-      const settled = Math.floor(p * text.length);
-      let out = '';
-      for (let i = 0; i < text.length; i++) {
-        const ch = text[i];
-        out += i < settled || ch === ' ' || ch === '[' || ch === ']' ? ch : GLYPHS[(Math.random() * GLYPHS.length) | 0];
-      }
-      shown.textContent = out;
-      if (p < 1) requestAnimationFrame(frame);
-    };
-    requestAnimationFrame(frame);
-  };
-
-  const reveals = document.querySelectorAll('[data-reveal], [data-scramble]');
+  const reveals = document.querySelectorAll('[data-reveal]');
   if (hasIO && !reduceMotion.matches) {
-    const jobs = new Map();
-    document.querySelectorAll('[data-scramble]').forEach((el) => jobs.set(el, prepScramble(el)));
     const io = new IntersectionObserver((entries) => {
       entries.forEach((e) => {
         if (!e.isIntersecting) return;
         e.target.classList.add('is-in');
-        if (jobs.has(e.target)) scramble(jobs.get(e.target));
         io.unobserve(e.target);
       });
     }, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
     reveals.forEach((el) => io.observe(el));
   } else {
     reveals.forEach((el) => el.classList.add('is-in'));
-  }
-
-  // ---------------------------------------------------------------- doctrine: the tenet in the middle of the screen is lit
-
-  const tenets = document.querySelector('[data-tenets]');
-  if (tenets) {
-    const items = [...tenets.children];
-    let queued = false;
-    const focus = () => {
-      queued = false;
-      const mid = window.innerHeight * 0.5;
-      let best = null;
-      let bestDist = Infinity;
-      items.forEach((li) => {
-        const r = li.getBoundingClientRect();
-        const dist = mid < r.top ? r.top - mid : mid > r.bottom ? mid - r.bottom : 0;
-        if (dist < bestDist) { bestDist = dist; best = li; }
-      });
-      items.forEach((li) => li.classList.toggle('is-active', li === best));
-    };
-    const queue = () => { if (!queued) { queued = true; requestAnimationFrame(focus); } };
-    focus();
-    tenets.classList.add('is-tracking');
-    window.addEventListener('scroll', queue, { passive: true });
-    window.addEventListener('resize', queue);
   }
 
   // ---------------------------------------------------------------- hero object
@@ -215,8 +148,6 @@
   function pyramid(canvas) {
     const ctx = canvas.getContext('2d');
     const hero = canvas.closest('.hero') || document.body;
-    const outAz = document.querySelector('[data-readout="az"]');
-    const outLift = document.querySelector('[data-readout="lift"]');
 
     const BONE = '236, 232, 225';
     const EMBER = '255, 75, 38';
@@ -266,7 +197,7 @@
       canvas.width = Math.round(W * dpr);
       canvas.height = Math.round(H * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      unit = Math.min(W, H) * (W < 520 ? 0.255 : 0.285); // a little smaller on phones, clear of the corner labels
+      unit = Math.min(W, H) * 0.285;
       cx = W / 2;
       cy = H * 0.57;
     };
@@ -451,16 +382,10 @@
     };
 
     let last = 0;
-    let lastReadout = 0;
     let running = false;
     let visible = true;
     let raf = 0;
 
-    const readout = (az, lift) => {
-      const deg = ((((az * 180) / Math.PI) % 360) + 360) % 360;
-      if (outAz) outAz.textContent = `Az ${deg.toFixed(1).padStart(5, '0')}°`;
-      if (outLift) outLift.textContent = `${W < 520 ? 'Sep.' : 'Separation'} +${lift.toFixed(3)}`;
-    };
 
     const scrollLift = () => {
       const r = hero.getBoundingClientRect();
@@ -478,8 +403,7 @@
       state.py += (state.ty - state.py) * 0.05;
       const targetLift = scrollLift() + 0.025 * Math.sin(state.t * 1.1);
       state.lift += (targetLift - state.lift) * 0.08;
-      const { az } = draw();
-      if (now - lastReadout > 120) { readout(az, GAP + state.lift); lastReadout = now; }
+      draw();
       if (running) raf = requestAnimationFrame(frame);
     };
 
@@ -495,8 +419,7 @@
       raf = 0;
     };
     const still = () => {
-      const { az } = draw();
-      readout(az, GAP + state.lift);
+      draw();
     };
 
     resize();

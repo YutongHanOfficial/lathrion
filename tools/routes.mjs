@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Writes a copy of index.html for each section address, so lathrion.com/holdings, /doctrine, /name and
+// Writes a copy of index.html for each section address, so lathrion.com/portfolio, /principles, /about and
 // /contact load the homepage (GitHub Pages serves /x from x.html). site.js then scrolls to the section.
 //
 //   node tools/routes.mjs      run after every change to index.html (tools/brand.mjs runs it too)
@@ -9,7 +9,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-export const SECTIONS = { holdings: 'Holdings', doctrine: 'Doctrine', name: 'The name', contact: 'Contact' };
+export const SECTIONS = { portfolio: 'Portfolio', principles: 'Principles', about: 'About', contact: 'Contact' };
 
 export function writeRoutes() {
   const index = readFileSync(join(ROOT, 'index.html'), 'utf8');

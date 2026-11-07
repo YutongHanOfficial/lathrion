@@ -3,14 +3,12 @@
 //
 //   node tools/brand.mjs          writes assets/brand/*.svg and favicon.svg, refreshes the inline copies
 //                                 in the HTML pages (between <!--brand:NAME--> markers) and the section pages
-//   node tools/brand.mjs --png    also renders the PNG icons, favicon.ico and og.png with headless Chrome
+//   node tools/brand.mjs --png    also renders the PNG icons, favicon.ico and og.png (needs `npm install`)
 //
 // The mark is a pyramid whose capstone has been lifted off. The wordmark is drawn letter by letter;
 // its A is a Λ (no crossbar) cut at the same slope as the sides of the mark.
 
-import { mkdirSync, readFileSync, writeFileSync, rmSync, existsSync, mkdtempSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
-import { tmpdir } from 'node:os';
+import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { writeRoutes } from './routes.mjs';
@@ -18,6 +16,7 @@ import { writeRoutes } from './routes.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const BONE = '#ece8e1';
 const INK = '#08090b';
+const EMBER = '#ff4b26';
 
 // ---------------------------------------------------------------------------------------------
 // Geometry helpers. Outer contours run clockwise and counters anticlockwise, so the default
@@ -202,8 +201,6 @@ const INLINE = {
   lockup: () => svgLockup('currentColor', { cls: 'lockup', title: '' }),
   wordmark: () => svgWordmark('currentColor', { cls: 'wordmark', title: '' }),
   mark: () => svgMark('currentColor', { cls: 'mark', title: '' }),
-  'og-mark': () => svgMark(BONE, { cls: 'og-mark', title: '' }),
-  'og-wordmark': () => svgWordmark(BONE, { cls: 'og-wordmark', title: '' }),
 };
 
 function inject(file) {
@@ -221,33 +218,53 @@ function inject(file) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// PNGs via headless Chrome
+// PNGs, rendered from SVG with resvg (run `npm install` once). No browser is involved.
 
-const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-
-function shoot(html, out, w, h, profile) {
-  const page = join(profile, `shot-${w}x${h}.html`);
-  writeFileSync(page, html);
-  execFileSync(
-    CHROME,
-    [
-      '--headless=new', '--disable-gpu', '--hide-scrollbars', '--no-first-run', '--no-default-browser-check',
-      `--user-data-dir=${join(profile, 'chrome')}`, '--force-device-scale-factor=1', `--window-size=${w},${h}`,
-      '--default-background-color=00000000', '--virtual-time-budget=4000', `--screenshot=${out}`, `file://${page}`,
-    ],
-    { stdio: 'ignore' },
+// App icons: the mark on the brand's near-black. Sizes up to 48 px use the wider-gap mark.
+function svgIcon(size, { radius = 0, scale = 0.58 } = {}) {
+  const m = size * scale;
+  const x = (size - m) / 2;
+  const y = (size - m) / 2 - size * 0.02;
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">` +
+    `<rect width="${size}" height="${size}" rx="${f(radius)}" fill="${INK}"/>` +
+    `<g transform="translate(${f(x)} ${f(y)}) scale(${f(m / 100)})">${markGroup(size <= 48 ? ICON_MARK : MARK, BONE)}</g></svg>`
   );
 }
 
-const iconPage = (size, { radius = 0, scale = 0.58 } = {}) => {
-  const m = size * scale;
+// The 1200 x 630 social card: the lockup on near-black, with ember light leaking out of the gap in the mark.
+function svgSocial() {
+  const W = 1200;
+  const H = 630;
+  const width = 132 + 46 + WM.width; // the lockup, as in svgLockup()
+  const s = 620 / width;
+  const lx = (W - width * s) / 2;
+  const ly = H / 2 - 50 * s;
+  const gx = lx + 66 * s; // centre of the gap: x 50, y 37.5 in the mark's own units
+  const gy = ly + 33.5 * s;
+  const rules = Array.from({ length: 7 }, (_, i) => {
+    const x = 80 + (i * 1040) / 6;
+    return `<line x1="${f(x)}" y1="0" x2="${f(x)}" y2="${H}"/>`;
+  }).join('');
   return (
-    `<!doctype html><html><body style="margin:0;background:transparent">` +
-    `<div style="width:${size}px;height:${size}px;background:${INK};border-radius:${radius}px;display:grid;place-items:center">` +
-    `<svg viewBox="0 0 100 100" width="${m}" height="${m}" style="display:block;margin-top:-${size * 0.02}px">${markGroup(size <= 48 ? ICON_MARK : MARK, BONE)}</svg>` +
-    `</div></body></html>`
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">` +
+    `<defs>` +
+    `<radialGradient id="haze" cx="${f(gx)}" cy="${f(gy)}" r="440" gradientUnits="userSpaceOnUse">` +
+    `<stop offset="0" stop-color="${EMBER}" stop-opacity="0.12"/><stop offset="1" stop-color="${EMBER}" stop-opacity="0"/></radialGradient>` +
+    `<filter id="soft" x="-60%" y="-400%" width="220%" height="900%"><feGaussianBlur stdDeviation="10"/></filter>` +
+    `<filter id="tight" x="-20%" y="-600%" width="140%" height="1300%"><feGaussianBlur stdDeviation="2.5"/></filter>` +
+    `</defs>` +
+    `<rect width="${W}" height="${H}" fill="${INK}"/>` +
+    `<g stroke="${BONE}" stroke-opacity="0.045" stroke-width="1">${rules}</g>` +
+    `<rect width="${W}" height="${H}" fill="url(#haze)"/>` +
+    `<ellipse cx="${f(gx)}" cy="${f(gy)}" rx="${f(64 * s)}" ry="${f(9 * s)}" fill="${EMBER}" fill-opacity="0.55" filter="url(#soft)"/>` +
+    `<rect x="${f(gx - 38 * s)}" y="${f(gy - 2 * s)}" width="${f(76 * s)}" height="${f(4 * s)}" fill="${EMBER}" filter="url(#tight)"/>` +
+    `<rect x="${f(gx - 34 * s)}" y="${f(gy - 0.8 * s)}" width="${f(68 * s)}" height="${f(1.6 * s)}" fill="${EMBER}"/>` +
+    `<g transform="translate(${f(lx)} ${f(ly)}) scale(${f(s)})" fill="${BONE}">` +
+    `<g transform="translate(0 -16) scale(1.32)">${markGroup(MARK, BONE)}</g>` +
+    `<g transform="translate(178 0)">${WM.body}</g></g></svg>`
   );
-};
+}
 
 function ico(pngs) {
   const header = Buffer.alloc(6);
@@ -269,33 +286,21 @@ function ico(pngs) {
   return Buffer.concat([header, dir, ...pngs.map((p) => p.buf)]);
 }
 
-function renderPngs() {
-  if (!existsSync(CHROME)) throw new Error('Google Chrome is needed for --png');
-  const profile = mkdtempSync(join(tmpdir(), 'lathrion-brand-'));
+async function renderPngs() {
+  let Resvg;
   try {
-    shoot(iconPage(180), join(ROOT, 'apple-touch-icon.png'), 180, 180, profile);
-    shoot(iconPage(192), join(ROOT, 'icon-192.png'), 192, 192, profile);
-    shoot(iconPage(512), join(ROOT, 'icon-512.png'), 512, 512, profile);
-    const small = [16, 32, 48].map((size) => {
-      const out = join(profile, `fav-${size}.png`);
-      shoot(iconPage(size, { radius: size * 0.22, scale: 0.66 }), out, size, size, profile);
-      return { size, buf: readFileSync(out) };
-    });
-    writeFileSync(join(ROOT, 'favicon.ico'), ico(small));
-    // The social card is a real page so it uses the site's fonts.
-    execFileSync(
-      CHROME,
-      [
-        '--headless=new', '--disable-gpu', '--hide-scrollbars', '--no-first-run', '--no-default-browser-check',
-        `--user-data-dir=${join(profile, 'chrome')}`, '--force-device-scale-factor=1', '--window-size=1200,630',
-        '--virtual-time-budget=4000', `--screenshot=${join(ROOT, 'og.png')}`, `file://${join(ROOT, 'tools', 'og.html')}`,
-      ],
-      { stdio: 'ignore' },
-    );
-    console.log('  rendered apple-touch-icon.png, icon-192.png, icon-512.png, favicon.ico, og.png');
-  } finally {
-    rmSync(profile, { recursive: true, force: true });
+    ({ Resvg } = await import('@resvg/resvg-js'));
+  } catch {
+    throw new Error('PNG rendering needs @resvg/resvg-js: run `npm install` in the repo first');
   }
+  const png = (svg) => new Resvg(svg, { font: { loadSystemFonts: false } }).render().asPng();
+  writeFileSync(join(ROOT, 'apple-touch-icon.png'), png(svgIcon(180)));
+  writeFileSync(join(ROOT, 'icon-192.png'), png(svgIcon(192)));
+  writeFileSync(join(ROOT, 'icon-512.png'), png(svgIcon(512)));
+  const small = [16, 32, 48].map((size) => ({ size, buf: png(svgIcon(size, { radius: size * 0.22, scale: 0.66 })) }));
+  writeFileSync(join(ROOT, 'favicon.ico'), ico(small));
+  writeFileSync(join(ROOT, 'og.png'), png(svgSocial()));
+  console.log('  rendered apple-touch-icon.png, icon-192.png, icon-512.png, favicon.ico, og.png');
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -308,11 +313,12 @@ const out = {
   'assets/brand/wordmark-dark.svg': svgWordmark(INK),
   'assets/brand/lockup-light.svg': svgLockup(BONE),
   'assets/brand/lockup-dark.svg': svgLockup(INK),
+  'assets/brand/social.svg': svgSocial(),
   'favicon.svg': svgFavicon(),
 };
 for (const [file, svg] of Object.entries(out)) writeFileSync(join(ROOT, file), svg + '\n');
 console.log(`  wrote ${Object.keys(out).length} SVG files (wordmark ${f(WM.width)} x ${f(WM.height)} units)`);
 
-for (const page of ['index.html', 'privacy.html', '404.html', 'tools/og.html']) inject(page);
+for (const page of ['index.html', 'privacy.html', '404.html']) inject(page);
 writeRoutes(); // the section pages are copies of index.html
-if (process.argv.includes('--png')) renderPngs();
+if (process.argv.includes('--png')) await renderPngs();

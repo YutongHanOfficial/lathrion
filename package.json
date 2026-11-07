@@ -1,0 +1,13 @@
+{
+  "name": "lathrion-site",
+  "private": true,
+  "description": "Website of Lathrion (lathrion.com)",
+  "scripts": {
+    "brand": "node tools/brand.mjs --png",
+    "routes": "node tools/routes.mjs",
+    "serve": "python3 tools/serve.py"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "2.6.2"
+  }
+}

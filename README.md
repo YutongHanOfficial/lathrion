@@ -11,18 +11,18 @@ GitHub Pages from the root of `main`.
 
 | Path | What it is |
 | --- | --- |
-| `index.html` | The homepage: hero, holdings, doctrine, the name, contact |
-| `holdings.html`, `doctrine.html`, `name.html`, `contact.html` | Copies of `index.html` that make lathrion.com/holdings and the other section addresses work. Generated; don't edit them |
+| `index.html` | The homepage: hero, portfolio, principles, about, contact |
+| `portfolio.html`, `principles.html`, `about.html`, `contact.html` | Copies of `index.html` that make lathrion.com/portfolio and the other section addresses work. Generated; don't edit them |
 | `privacy.html` | Privacy policy (the site collects nothing) |
 | `404.html` | Not-found page. GitHub Pages serves it for any missing address |
 | `assets/css/site.css` | All styles. Colours and type are tokens at the top |
-| `assets/js/site.js` | Section addresses, clock, menu, scroll reveals, doctrine focus and the rotating pyramid in the hero |
+| `assets/js/site.js` | Section addresses, menu, scroll reveals and the rotating pyramid in the hero |
 | `assets/fonts/` | Self-hosted fonts and their licences |
-| `assets/brand/` | Logo files: mark, wordmark and lockup, light and dark |
+| `assets/brand/` | Logo files: mark, wordmark and lockup, light and dark, and the social card |
 | `tools/brand.mjs` | Draws the logo and writes every icon from it |
 | `tools/routes.mjs` | Writes the section copies of `index.html` |
 | `tools/serve.py` | Local server that behaves like GitHub Pages |
-| `tools/og.html` | The 1200 x 630 social card, rendered into `og.png` |
+| `package.json` | One dev dependency, `@resvg/resvg-js`, used only to render the PNG icons |
 
 ## Run it locally
 
@@ -30,17 +30,17 @@ GitHub Pages from the root of `main`.
 python3 tools/serve.py
 ```
 
-Then open http://localhost:8000. The script answers like GitHub Pages does: `/name` serves `name.html`,
+Then open http://localhost:8000. The script answers like GitHub Pages does: `/about` serves `about.html`,
 and unknown addresses get `404.html`.
 
 ## Changing things
 
-**Add a product.** Copy one `<li>` in the holdings section of `index.html` into the right sector and change
-the name, link, description and the tag under "Live". Then update the counts: "Seven are public" in the
-hero, the `07` in the strip below it and "Seven public products" in the phone menu.
+**Add a product.** Copy one `<li>` in the portfolio section of `index.html` into the right sector and change
+the name, link, description and tags. Then update the count in the About section ("Seven products in data,
+games and media").
 
-**After any change to `index.html`,** regenerate the section pages, or /holdings, /doctrine, /name and
-/contact will serve the old version:
+**After any change to `index.html`,** regenerate the section pages, or /portfolio, /principles, /about
+and /contact will serve the old version:
 
 ```bash
 node tools/routes.mjs
@@ -50,11 +50,13 @@ node tools/routes.mjs
 letter widths, spacing). After editing, run:
 
 ```bash
+npm install
 node tools/brand.mjs --png
 ```
 
-That rewrites the SVGs in `assets/brand/`, `favicon.svg`, the inline copies in the pages, and, with
-`--png`, renders `favicon.ico`, the PNG icons and `og.png` using Google Chrome.
+That rewrites the SVGs in `assets/brand/`, `favicon.svg`, the inline copies in the pages and the section
+pages, and, with `--png`, renders `favicon.ico`, the PNG icons and the social card `og.png` from the same
+SVG with resvg. No browser is involved.
 
 ## Domain
 
